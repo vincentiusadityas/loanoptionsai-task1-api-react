@@ -1,99 +1,145 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useAppDispatch, useAppSelector } from '../../app/hooks';
-import { fetchTableData } from './tableAPI';
-import { add, loadDataAsync, remove, RowData, selectTableData, TableState } from './tableSlice';
+import { add, loadDataAsync, remove, RowData, selectTableData } from './tableSlice';
 import styles from './Table.module.css';
+import { Button, TableContainer, Table, TableHead, TableRow, TableCell, TableBody, Paper } from '@mui/material';
 
-export function Table() {
+export function DataTable() {
+
+    let tableRef: any;
+    let lastRowRef: any;
 
     const tableData = useAppSelector(selectTableData);
     const dispatch = useAppDispatch();
 
     useEffect(() => {
-        console.log("STATUS:", tableData.status)
+        console.log("tableData:", tableData)
     }, [tableData])
 
+    useEffect(() => {
+        if (!tableData.firstLoad && tableData.data.length && lastRowRef) lastRowRef.scrollIntoView();
+    }, [tableData, lastRowRef])
+
+    useEffect(() => {
+        if (tableData.firstLoad && tableData.data.length && tableRef) {
+            tableRef.scrollIntoView();
+        };
+    }, [tableData, tableRef])
+
+    const scrollToLastRow = () => {
+        if (lastRowRef) {
+            console.log("lastRowRef:", lastRowRef)
+            lastRowRef.scrollIntoView();
+        } else {
+            console.log("none")
+        }
+    }
+
     const getTableContent = (data: RowData[]) => {
+
+        const setRef = (index: any, len: any, r: any) => {
+            if (index === len-1) {
+                lastRowRef = r
+            }
+        }
 
         const header = Object.keys(data[0])
         const iterateItem = () => {
             return data.map((item: RowData, j: any) => {
                 return (
-                    <tr key={j}>
-                        <td>{item.domains?.join(', ')}</td>
-                        <td>{item.country}</td>
-                        <td>{item['state-province']}</td>
-                        <td>{item.web_pages?.join(', ')}</td>
-                        <td>{item.name}</td>
-                        <td>{item.alpha_two_code}</td>
-                    </tr>
+                    <TableRow key={j} ref={(r) => setRef(j, data.length, r)}>
+                        <TableCell>{item.domains?.join(', ')}</TableCell>
+                        <TableCell>{item.country}</TableCell>
+                        <TableCell>{item['state-province']}</TableCell>
+                        <TableCell>{item.web_pages?.join(', ')}</TableCell>
+                        <TableCell>{item.name}</TableCell>
+                        <TableCell>{item.alpha_two_code}</TableCell>
+                    </TableRow>
                 );
             })
         }
 
         return (
-            <table className={styles.table}>
-                <thead>
-                    <tr>
-                        {header.map((h, i) => (
-                            <th key={i}>
-                                {h}
-                            </th>
-                        ))}
-                    </tr>
-                </thead>
-                <tbody>
-                    {iterateItem()}
-                </tbody>
-            </table>
+            <Paper sx={{ width: '100%', overflow: 'hidden' }} elevation={2}>
+                <TableContainer sx={{ maxHeight: '100%' }}>
+                    <Table stickyHeader aria-label="sticky table" ref={(r) => tableRef = r}>
+                        <TableHead>
+                            <TableRow>
+                                {header.map((h, i) => (
+                                    <TableCell key={i} className={styles.tableHeader}>
+                                        {h}
+                                    </TableCell>
+                                ))}
+                            </TableRow>
+                        </TableHead>
+                        <TableBody>
+                            {iterateItem()}
+                        </TableBody>
+                    </Table>
+                </TableContainer>
+            </Paper>
         );
 
     };
 
     return (
-        <div>
+        <div className={styles.root}>
             <div className={styles.buttonWrapper}>
-                <button
+                <Button
+                    variant='contained'
                     className={styles.button}
                     onClick={() => dispatch(loadDataAsync())}
                 >
                     LOAD
-                </button>
-                <button
+                </Button>
+                <Button
+                    variant='contained'
                     className={styles.button}
-                    onClick={() => dispatch(add())}
+                    onClick={() => {
+                        dispatch(add())
+                        scrollToLastRow()
+                    }}
+                    disabled={tableData.data.length === 0}
                 >
                     ADD
-                </button>
-                <button
+                </Button>
+                <Button
+                    variant='contained'
                     className={styles.button}
                     onClick={() => dispatch(remove())}
+                    disabled={tableData.data.length === 0}
                 >
                     DELETE
-                </button>
+                </Button>
             </div>
             {tableData.data && tableData.data.length !== 0 ?
                 <>
                     {getTableContent(tableData.data)}
                     <div className={styles.buttonWrapper}>
-                        <button
+                        <Button
+                            variant='contained'
                             className={styles.button}
                             onClick={() => dispatch(loadDataAsync())}
                         >
                             LOAD
-                        </button>
-                        <button
+                        </Button>
+                        <Button
+                            variant='contained'
                             className={styles.button}
-                            onClick={() => dispatch(add())}
+                            onClick={() => {
+                                dispatch(add())
+                                scrollToLastRow()
+                            }}
                         >
                             ADD
-                        </button>
-                        <button
+                        </Button>
+                        <Button
+                            variant='contained'
                             className={styles.button}
                             onClick={() => dispatch(remove())}
                         >
                             DELETE
-                        </button>
+                        </Button>
                     </div>
                 </>
                 :
